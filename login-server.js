@@ -2,7 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcryptjs");
+// bcryptjs is optional here; use only if passwords are hashed
+// const bcrypt = require("bcryptjs");
 
 const app = express();
 app.use(cors());
@@ -30,7 +31,10 @@ const User = mongoose.model("User", userSchema);
 
 // ======= LOGIN ROUTE =======
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+
+  // lowercase email for consistency
+  email = email.toLowerCase().trim();
 
   try {
     const user = await User.findOne({ email });
@@ -39,13 +43,15 @@ app.post("/login", async (req, res) => {
       return res.json({ success: false, message: "Email not registered" });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
+    // If passwords are plain text
+    if (user.password !== password) {
       return res.json({ success: false, message: "Incorrect password" });
     }
 
-    // Optional: Generate a simple token or session ID
+    // If using bcrypt (comment out plain text above)
+    // const passwordMatch = await bcrypt.compare(password, user.password);
+    // if (!passwordMatch) return res.json({ success: false, message: "Incorrect password" });
+
     const token = `${user._id}_${Date.now()}`;
 
     res.json({ success: true, message: "Login successful", token });
